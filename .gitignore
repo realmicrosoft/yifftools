@@ -1,0 +1,5 @@
+# some scripts use this folder, but the contents are usually large
+/work
+
+# please stop uploading my jetbrains ide data
+/.idea
