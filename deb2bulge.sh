@@ -7,7 +7,7 @@ if [ -z "$SHEATH" ]; then
 fi
 
 function usage() {
-  echo "usage: deb2bulge.sh <package name> <version> <current url>"
+  echo "usage: deb2bulge.sh <current url>"
   exit 1
 }
 
@@ -18,6 +18,7 @@ function err_no_file() {
 
 # returns the likely name of the file that the url will download to
 # removes the https://<domain>/ from the url and just returns the <name>.deb
+# TODO! this is very much a hack, and we should see if we can instead get it from curl
 function url_likely_download_name() {
   echo "$1" | sed -e 's/https:\/\/.*\///'
 }
@@ -31,31 +32,39 @@ if [ -z "$1" ]; then
   usage
 fi
 
-NAME=$1
-VERSION=$2
-URL=$3
+URL=$1
 DEBNAME=$(url_likely_download_name "$URL")
-URLFINAL=$(replace_version_in_url "$VERSION" "$URL")
 
-if [ -z "$NAME" ]; then
-  usage
-fi
-if [ -z "$VERSION" ]; then
-  usage
-fi
 if [ -z "$URL" ]; then
   usage
 fi
 
 mkdir -p work
 cd work || err_no_file "work"
+mkdir -p tmp
+
+cd tmp || err_no_file "tmp"
 
 echo "deb2bulge.sh: converting $NAME $VERSION from $URL"
 echo "deb2bulge.sh: downloading $URL to get sha512sum"
-curl --output "$NAME.deb" "$URL"
+curl --output "$DEBNAME" "$URL" -L
 echo "deb2bulge.sh: calculating sha512sum"
-SHA=$(sha512sum "$NAME.deb" | awk '{print $1}')
+SHA=$(sha512sum "$DEBNAME" | awk '{print $1}')
 
+echo "deb2bulge.sh: extracting control file from $DEBNAME"
+ar x "$DEBNAME" control.tar.xz
+echo "deb2bulge.sh: extracting control file from control.tar.xz"
+tar -xf control.tar.xz
+
+echo "deb2bulge.sh: parsing control file"
+NAME=$(grep -i "Package:" control | awk '{print $2}')
+VERSION=$(grep -i "Version:" control | awk '{print $2}')
+DESC=$(grep -i "Description:" control | sed -e 's/Description: //')
+HOMEPAGE=$(grep -i "Homepage:" control | awk '{print $2}')
+
+URLFINAL=$(replace_version_in_url "$VERSION" "$URL")
+
+cd ..
 
 mkdir -p "$NAME"
 OUTFOLDER="$(pwd)/$NAME"
@@ -68,9 +77,9 @@ MAINTAINERS=("Name <email@mail.com>")
 NAME="$NAME"
 VERSION="$VERSION"
 EPOCH=0
-DESC="FILLME"
+DESC="$DESC"
 GRPS=()
-URL="FILLME"
+URL="$HOMEPAGE"
 LICENSES=("FILLME")
 DEPENDS=("FILLME")
 OPT_DEPENDS=()
