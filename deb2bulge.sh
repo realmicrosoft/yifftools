@@ -41,9 +41,13 @@ fi
 
 mkdir -p work
 cd work || err_no_file "work"
+
+rm -rf tmp
+
 mkdir -p tmp
 
 cd tmp || err_no_file "tmp"
+
 
 echo "deb2bulge.sh: converting $NAME $VERSION from $URL"
 echo "deb2bulge.sh: downloading $URL to get sha512sum"
@@ -52,9 +56,11 @@ echo "deb2bulge.sh: calculating sha512sum"
 SHA=$(sha512sum "$DEBNAME" | awk '{print $1}')
 
 echo "deb2bulge.sh: extracting control file from $DEBNAME"
-ar x "$DEBNAME" control.tar.xz
-echo "deb2bulge.sh: extracting control file from control.tar.xz"
-tar -xf control.tar.xz
+ar x "$DEBNAME"
+# as the control file could be .gz or .xz, we need to check with a wildcard
+CONTROLFILE=$(ls control.tar.*)
+echo "deb2bulge.sh: extracting control file from $CONTROLFILE"
+tar -xf "$CONTROLFILE"
 
 echo "deb2bulge.sh: parsing control file"
 NAME=$(grep -i "Package:" control | awk '{print $2}')
