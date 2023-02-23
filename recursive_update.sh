@@ -34,6 +34,12 @@ function check_pkgscript() {
   fi
 }
 
+function check_for_warnings() {
+  PACKAGE="$1"
+  PACKAGE_DIR="$2"
+  "$WORKING_DIR/system_warnings.sh" "$PACKAGE" "$PACKAGE_DIR"
+}
+
 function update() {
   PKGNAME="$1"
   EDIT_PKGSCRIPT="$2"
@@ -66,8 +72,17 @@ function update() {
     echo "$PKGNAME: installing package"
     sheath -i
     echo "$PKGNAME: package should be installed!"
-    echo "$PKGNAME: press enter to continue"
-    read -r
+    echo "$PKGNAME: checking for warnings"
+    check_for_warnings "$PKGNAME" "$PACKAGES_DIR/$PKGNAME"
+    echo "$PKGNAME: done"
+    echo "$PKGNAME: press y or enter to continue, or n to treat as failed build"
+    REPLY=""
+    read -r -n 1 -p "y/n: " REPLY
+    if [ "$REPLY" = "n" ]; then
+      echo "$PKGNAME: restarting update process"
+      update "$PKGNAME" "edit"
+      return
+    fi
   fi
   echo "$PKGNAME: checking for dependencies"
   DEPS=$("$BULGETOOL" deplist "$PKGNAME")
