@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-SHEATH=$(which sheath)
+HOLE=$(which hole)
 BULGETOOL=$(which bulgetool)
 WORKING_DIR=$(realpath "$(dirname "$0")")
-if [ -z "$SHEATH" ]; then
-  echo "sheath not found in your path! please add sheath to your path (:"
+if [ -z "$HOLE" ]; then
+  echo "hole not found in your path! please add hole to your path (:"
   exit 1
 fi
 if [ -z "$BULGETOOL" ]; then
@@ -60,7 +60,7 @@ function update() {
     echo "$PKGNAME: skipping"
   else
     cd "$PACKAGES_DIR/$PKGNAME" || err_no_file "$PACKAGES_DIR/$PKGNAME"
-    MAKEFLAGS="-j$(nproc)" sheath -cb
+    env PKG_CACHE="$PACKAGES_DIR" "$HOLE" -cb -e MAKEFLAGS="-j$(nproc)"
     echo "$PKGNAME: package should be built, if build failed please press 'n'; otherwise press 'y'"
     REPLY=""
     read -r -n 1 -p "y/n: " REPLY
@@ -70,7 +70,7 @@ function update() {
       return
     fi
     echo "$PKGNAME: installing package"
-    sheath -i
+    "$HOLE" -i
     echo "$PKGNAME: package should be installed!"
     echo "$PKGNAME: checking for warnings"
     check_for_warnings "$PKGNAME" "$PACKAGES_DIR/$PKGNAME"
